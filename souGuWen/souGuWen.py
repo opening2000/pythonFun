@@ -141,7 +141,6 @@ def getMd5Str(info):
 
 #mysql
 def createConn():
-    #'127.0.0.1','root','opening2000',3306 , 'python_demo'
     conn = MySQLdb.connect(host = db_host , user = db_user , passwd = db_pass , port = db_port , charset='utf8')
     cur = conn.cursor()
     conn.select_db(db_database)
