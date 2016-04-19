@@ -119,6 +119,30 @@ def saveUrlMain(urlMain):
     #closeConn(conn , cur)
 
 
+#根据urlmd5的值删除url_main表中记录
+def deleteUrlMainByUrlMd5(urlmd5):
+    #conn , cur = createConn()
+    cur.execute('delete from url_main where urlmd5=%s', (urlmd5, ))
+    conn.commit()
+    #closeConn(conn , cur)
+
+#将Url_main表中的isvisited标志位置为1或者0
+def updateVisitedFlagForUrlMainByUrlMd5(urlMd5 , isVisited):
+    nowStr = time.strftime('%Y-%m-%d %H:%M:%S')
+    #conn , cur = createConn()
+    cur.execute('update url_main set isvisited = %s ,updatetime = %s where urlmd5 = %s', (isVisited , nowStr , urlMd5))
+    conn.commit()
+    #closeConn(conn , cur)
+    
+#根据urlmd5置validate标志位
+def updateUrlMainValiDateByUrlMd5(urlMd5 , valiDate):
+    nowStr = time.strftime('%Y-%m-%d %H:%M:%S')
+    #conn , cur = createConn()
+    cur.execute('update url_main set validate = %s ,updatetime = %s where urlmd5 = %s', (valiDate , nowStr , urlMd5))
+    conn.commit()
+    #closeConn(conn , cur)
+
+
 
 def appendStrToFile(filename , str):
     f = open(filename,'a')    #+表示可读可写，open和file都可以返回一个文件对象，不过建议使用open
@@ -174,13 +198,7 @@ def insertUrlInfoByUrl(url , content):
     conn.commit()
     #closeConn(conn , cur)
 
-#将Url_main表中的isvisited标志位置为1或者0
-def updateVisitedFlagForUrlMainByUrlMd5(urlMd5 , isVisited):
-    nowStr = time.strftime('%Y-%m-%d %H:%M:%S')
-    #conn , cur = createConn()
-    cur.execute('update url_main set isvisited = %s ,updatetime = %s where urlmd5 = %s', (isVisited , nowStr , urlMd5))
-    conn.commit()
-    #closeConn(conn , cur)
+
 
 
 def findUrlsInPage(url):
