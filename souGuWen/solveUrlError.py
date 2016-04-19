@@ -72,26 +72,93 @@ def closeConn( conn , cur):
 
 
 
-#将Url_main表中的isvisited标志位置为1或者0
-def updateVisitedFlagForUrlMainByUrlMd5(urlMd5 , isVisited):
+class UrlMain:
+    
+    def __init__(self , urlMd5 , parentUrlMd5 , url , name , level , isVisited):
+        self.urlMd5 = urlMd5
+        self.parentUrlMd5 = parentUrlMd5
+        self.url = url
+        self.name = name
+        if not level:
+            level = 0
+        if level == '':
+            level = 0
+        self.level = int(level)
+        self.isVisited = isVisited
+    
+
+#根据urlMd5值获取UrlMain对象
+def getUrlMainByUrlMd5(urlMd5):
+    #conn , cur = createConn()
+    cur.execute('select urlMd5 , parentUrlMd5 , url , name , level , isVisited from url_main where urlmd5= %s ' , (urlMd5,))
+    result = cur.fetchone()
+    #closeConn(conn , cur)
+    
+    if result and len(result) > 0:
+        urlMain = UrlMain(result[0] , result[1] ,result[2] ,result[3] ,result[4] ,result[5] )
+        return urlMain
+    else:
+        return None
+
+#保存UrlMain对象
+def saveUrlMain(urlMain):
+    url = urlMain.url
+    parentUrlMd5 = urlMain.parentUrlMd5
+    urlMd5 = urlMain.urlMd5
+    name = urlMain.name
+    level = int(urlMain.level)
+    isVisited = urlMain.isVisited
+    
     nowStr = time.strftime('%Y-%m-%d %H:%M:%S')
     #conn , cur = createConn()
-    cur.execute('update url_main set isvisited = %s ,updatetime = %s where urlmd5 = %s', (isVisited , nowStr , urlMd5))
+    cur.execute('insert into url_main(urlMd5 , parentUrlMd5 , url , name , level , isVisited ,inserttime ,updatetime) values(%s,%s,%s,%s,%s,%s,%s,%s)', (urlMd5 , parentUrlMd5 , url , name , level , isVisited , nowStr , nowStr))
+    conn.commit()
+    #closeConn(conn , cur)
+    
+
+#根据urlmd5置validate标志位
+def updateUrlMainValiDateByUrlMd5(urlMd5 , valiDate):
+    nowStr = time.strftime('%Y-%m-%d %H:%M:%S')
+    #conn , cur = createConn()
+    cur.execute('update url_main set validate = %s ,updatetime = %s where urlmd5 = %s', (valiDate , nowStr , urlMd5))
+    conn.commit()
+    #closeConn(conn , cur)
+
+#根据urlmd5置solveFlag标志位
+def updateUrlErrorByUrlMd5(urlMd5 , rightUrlMd5, rightUrl, solveFlag):
+    nowStr = time.strftime('%Y-%m-%d %H:%M:%S')
+    #conn , cur = createConn()
+    cur.execute('update url_error set rightUrlMd5 = %s , rightUrl = %s, solveFlag=%s, updatetime = %s where urlmd5 = %s', (rightUrlMd5, rightUrl, solveFlag, nowStr, urlMd5))
     conn.commit()
     #closeConn(conn , cur)
 
 
+def findUrlInfoByUrl(url):
+    #conn , cur = createConn()
+    cur.execute('select content from url_cache where url= %s ' , (url,))
+    result = cur.fetchone()
+    #closeConn(conn , cur)
+    #print result is not None    #is not None 是非空
+    #print len(result)
+    if result and len(result) == 1:
+        return result[0]
+    else:
+        return None
 
 
-def test404():
+
+def test404(url):
     try:
-        response = urllib2.urlopen('/')
+        response = urllib2.urlopen(url)
         html = response.read()
         content = html.decode('utf-8').encode('utf-8')
+        return True
     except Exception , e:
         print 'Exception'
+        return False
     except Error , e1:
         print 'Error'
+        return False
 
 
 
@@ -135,7 +202,8 @@ def work():
         
         #循环查出来的list
         for errUrl in errorUrls:
-            print errUrl
+            #print errUrl
+            
             #处理下url，看看是不是url拼错了导致的
             #获取到url的根路径，然后后面拼接asp
             #http://so.gushiwen.org/guwen/bookv_2284.aspx/author_820.aspx
@@ -146,14 +214,40 @@ def work():
             aspxIndex = errUrl.find('.aspx')
             if aspxIndex > -1:
                 u = errUrl[aspxIndex+5:]
-            newUrl = rootUrl + u
+            url = rootUrl + u
             
+            urlMd5 = getMd5Str(url)
+            urlMain = getUrlMainByUrlMd5(urlMd5)
             
+            errUrlMd5 = getMd5Str(errUrl)
+            #print errUrlMd5
+            errUrlMain = getUrlMainByUrlMd5(errUrlMd5)
             
-        break    
-        #如果是这种情况，那么将solveFlag置为2
-        #想url_cache表中插入记录
-        #如果不是，将solveFlag置为1
+            #没必要去url_cache表中查看是否存在记录了，肯定存在，因为url_cache中也记录了404等的错误链接
+            
+            #其实不需要对这个链接内容进行解析，只需要判断下是否可以访问就可以，剩下访问链接内容及处理其中链接，由主任务进行就可以了
+            if test404(url):
+                #如果可以访问
+                
+                #向url_main表插入一条记录
+                if not urlMain:
+                    #urlMd5 , parentUrlMd5 , url , name , level , isVisited
+                    #print urlMd5 , errUrlMain.parentUrlMd5 , url , errUrlMain.name , errUrlMain.level , '0'
+                    urlMain1 = UrlMain(urlMd5 , errUrlMain.parentUrlMd5 , url , errUrlMain.name , errUrlMain.level , '0')
+                    saveUrlMain(urlMain1)
+                
+                #将错误的urlmain置的validdate置为0
+                updateUrlMainValiDateByUrlMd5(errUrlMd5, '0')
+                
+                #如果是这种情况，那么将solveFlag置为2
+                updateUrlErrorByUrlMd5(errUrlMd5 , urlMd5, url, '2')
+                
+            else:
+                pass
+                #如果不能访问
+                #如果不是，将solveFlag置为1
+                updateUrlErrorByUrlMd5(errUrlMd5 , '', '', '1')
+            
     
 
 if __name__ == '__main__':
