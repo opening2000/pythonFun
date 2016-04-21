@@ -207,14 +207,28 @@ def work():
             #处理下url，看看是不是url拼错了导致的
             #获取到url的根路径，然后后面拼接asp
             #http://so.gushiwen.org/guwen/bookv_2284.aspx/author_820.aspx
-            orgIndex = errUrl.find('.org')
-            if orgIndex > 0:
-                rootUrl = errUrl[0:orgIndex+4]
+#            orgIndex = errUrl.find('.org')
+#            if orgIndex > 0:
+#                rootUrl = errUrl[0:orgIndex+4]
+#            
+#            aspxIndex = errUrl.rfind('.aspx')
+#            if aspxIndex > -1:
+#                u = errUrl[aspxIndex+5:]
+#            url = rootUrl + u
             
-            aspxIndex = errUrl.find('.aspx')
-            if aspxIndex > -1:
-                u = errUrl[aspxIndex+5:]
-            url = rootUrl + u
+            #http://so.gushiwen.org/guwen/bookv_2284.aspx/author_820.aspx
+            #http://so.gushiwen.org/type.aspx?p=1&t=%e5%b0%8f%e5%ad%a6%e6%96%87%e8%a8%80%e6%96%87/guwen/book_33.aspx
+            #http://so.gushiwen.org/guwen/book_19.aspxjavascript:like(19)
+            pattern1 = re.compile('(.*?).org/(.*?).aspx.*?/(.*?).aspx',re.S)
+            urlItems1 = re.findall(pattern1,errUrl)
+            
+            if len(urlItems1) >0:
+                url = urlItems1[0][0] + '.org/' + urlItems1[0][-1] + '.aspx'
+            else:
+                pattern2 = re.compile('(.*?).org/(.*?).aspx',re.S)
+                urlItems2 = re.findall(pattern2,errUrl)
+                if len(urlItems2)>0:
+                    url = urlItems2[0][0] + '.org/' + urlItems2[0][-1] + '.aspx'
             
             urlMd5 = getMd5Str(url)
             urlMain = getUrlMainByUrlMd5(urlMd5)
@@ -247,7 +261,6 @@ def work():
                 #如果不能访问
                 #如果不是，将solveFlag置为1
                 updateUrlErrorByUrlMd5(errUrlMd5 , '', '', '1')
-            
     
 
 if __name__ == '__main__':
