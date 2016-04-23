@@ -27,10 +27,10 @@ db_database = cf.get("db", "db_database")
 
 
 def findUrlInfoByUrl(url):
-    #conn , cur = createConn()
+    conn , cur = createConn()
     cur.execute('select content from url_cache where url= %s ' , (url,))
     result = cur.fetchone()
-    #closeConn(conn , cur)
+    closeConn(conn , cur)
     #print result is not None    #is not None 是非空
     #print len(result)
     if result and len(result) == 1:
@@ -40,10 +40,10 @@ def findUrlInfoByUrl(url):
 
 
 def findUrlInfoByUrlMd5(urlMd5):
-    #conn , cur = createConn()
+    conn , cur = createConn()
     cur.execute('select content from url_cache where urlmd5= %s ' , (urlMd5,))
     result = cur.fetchone()
-    #closeConn(conn , cur)
+    closeConn(conn , cur)
     #print result is not None    #is not None 是非空
     #print len(result)
     if result and len(result) == 1:
@@ -55,9 +55,22 @@ def findUrlInfoByUrlMd5(urlMd5):
 def insertUrlInfoByUrl(url , content):
     urlmd5 = getMd5Str(url)
     nowStr = time.strftime('%Y-%m-%d %H:%M:%S')
-    #conn , cur = createConn()
+    conn , cur = createConn()
     cur.execute('insert into url_cache(url ,urlmd5 , content ,inserttime ,updatetime) values(%s,%s,%s,%s,%s)', (url , urlmd5 , content , nowStr , nowStr))
     conn.commit()
-    #closeConn(conn , cur)
+    closeConn(conn , cur)
 
 
+#mysql
+def createConn():
+    conn = MySQLdb.connect(host = db_host , user = db_user , passwd = db_pass , port = db_port , charset='utf8')
+    cur = conn.cursor()
+    conn.select_db(db_database)
+    conn.autocommit(1) 
+    
+    return conn , cur
+
+def closeConn( conn , cur):
+    conn.commit()
+    cur.close()
+    conn.close()
