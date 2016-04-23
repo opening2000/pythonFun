@@ -17,131 +17,12 @@ import ConfigParser
 import string, sys
 
 
+import UrlMainUtil
+import UrlInfoUtil
+
+
 
 os_name = 'windows'
-conn = None
-cur = None
-
-
-#从db.conf中读取配置参数
-cf = ConfigParser.ConfigParser()
- 
-cf.read("db.conf")
-
-db_host = cf.get("db", "db_host")
-db_port = cf.getint("db", "db_port")
-db_user = cf.get("db", "db_user")
-db_pass = cf.get("db", "db_pass")
-db_database = cf.get("db", "db_database")
-
-
-
-class UrlMain:
-    
-    def __init__(self , urlMd5 , parentUrlMd5 , url , name , level , isVisited):
-        self.urlMd5 = urlMd5
-        self.parentUrlMd5 = parentUrlMd5
-        self.url = url
-        self.name = name
-        if not level:
-            level = 0
-        if level == '':
-            level = 0
-        self.level = int(level)
-        self.isVisited = isVisited
-    
-
-#根据urlMd5值获取UrlMain对象
-def getUrlMainByUrlMd5(urlMd5):
-    #conn , cur = createConn()
-    cur.execute('select urlMd5 , parentUrlMd5 , url , name , level , isVisited from url_main where urlmd5= %s ' , (urlMd5,))
-    result = cur.fetchone()
-    #closeConn(conn , cur)
-    
-    if result and len(result) > 0:
-        urlMain = UrlMain(result[0] , result[1] ,result[2] ,result[3] ,result[4] ,result[5] )
-        return urlMain
-    else:
-        return None
-
-def getUrlMainsByLevelAndIsVisited(level , isVisited = '0'):
-    urlMains = []
-    #conn , cur = createConn()
-    cur.execute('select urlMd5 , parentUrlMd5 , url , name , level , isVisited from url_main where level= %s and isVisited = %s' , (level, isVisited))
-    results = cur.fetchall()    #获取游标中剩余的所有
-    
-    for result in results:
-        if result and len(result) > 0:
-            urlMain = UrlMain(result[0] , result[1] ,result[2] ,result[3] ,result[4] ,result[5] )
-            urlMains.append(urlMain)
-    #closeConn(conn , cur)
-    return urlMains
-
-#分页查找
-def getUrlMainsByLevelAndIsVisitedLimit(level , isVisited = '0' , pageSize = 100):
-    urlMains = []
-    #conn , cur = createConn()
-    cur.execute('select urlMd5 , parentUrlMd5 , url , name , level , isVisited from url_main where level= %s and isVisited = %s limit %s' , (level, isVisited , pageSize ))
-    results = cur.fetchall()    #获取游标中剩余的所有
-    
-    for result in results:
-        if result and len(result) > 0:
-            urlMain = UrlMain(result[0] , result[1] ,result[2] ,result[3] ,result[4] ,result[5] )
-            urlMains.append(urlMain)
-    #closeConn(conn , cur)
-    return urlMains
-
-
-#查找符合level和isvisited条件的url_main表的记录数
-def getUrlMainTotalCountAccordingToLevelAndIsVisited(level , isVisited = '0'):
-    totalCount = 0
-    cur.execute('select count(*) from url_main where level= %s and isVisited = %s' , (level, isVisited))
-    result = cur.fetchone()
-    if result and len(result) > 0:
-        totalCount = result[0]
-    return totalCount
-    
-    
-
-#保存UrlMain对象
-def saveUrlMain(urlMain):
-    url = urlMain.url
-    parentUrlMd5 = urlMain.parentUrlMd5
-    urlMd5 = urlMain.urlMd5
-    name = urlMain.name
-    level = int(urlMain.level)
-    isVisited = urlMain.isVisited
-    
-    nowStr = time.strftime('%Y-%m-%d %H:%M:%S')
-    #conn , cur = createConn()
-    cur.execute('insert into url_main(urlMd5 , parentUrlMd5 , url , name , level , isVisited ,inserttime ,updatetime) values(%s,%s,%s,%s,%s,%s,%s,%s)', (urlMd5 , parentUrlMd5 , url , name , level , isVisited , nowStr , nowStr))
-    conn.commit()
-    #closeConn(conn , cur)
-
-
-#根据urlmd5的值删除url_main表中记录
-def deleteUrlMainByUrlMd5(urlmd5):
-    #conn , cur = createConn()
-    cur.execute('delete from url_main where urlmd5=%s', (urlmd5, ))
-    conn.commit()
-    #closeConn(conn , cur)
-
-#将Url_main表中的isvisited标志位置为1或者0
-def updateVisitedFlagForUrlMainByUrlMd5(urlMd5 , isVisited):
-    nowStr = time.strftime('%Y-%m-%d %H:%M:%S')
-    #conn , cur = createConn()
-    cur.execute('update url_main set isvisited = %s ,updatetime = %s where urlmd5 = %s', (isVisited , nowStr , urlMd5))
-    conn.commit()
-    #closeConn(conn , cur)
-    
-#根据urlmd5置validate标志位
-def updateUrlMainValiDateByUrlMd5(urlMd5 , valiDate):
-    nowStr = time.strftime('%Y-%m-%d %H:%M:%S')
-    #conn , cur = createConn()
-    cur.execute('update url_main set validate = %s ,updatetime = %s where urlmd5 = %s', (valiDate , nowStr , urlMd5))
-    conn.commit()
-    #closeConn(conn , cur)
-
 
 
 def appendStrToFile(filename , str):
@@ -163,51 +44,15 @@ def getMd5Str(info):
     return m.hexdigest()
 
 
-#mysql
-def createConn():
-    conn = MySQLdb.connect(host = db_host , user = db_user , passwd = db_pass , port = db_port , charset='utf8')
-    cur = conn.cursor()
-    conn.select_db(db_database)
-    conn.autocommit(1) 
-    
-    return conn , cur
-
-def closeConn( conn , cur):
-    conn.commit()
-    cur.close()
-    conn.close()
-
-
-def findUrlInfoByUrl(url):
-    #conn , cur = createConn()
-    cur.execute('select content from url_cache where url= %s ' , (url,))
-    result = cur.fetchone()
-    #closeConn(conn , cur)
-    #print result is not None    #is not None 是非空
-    #print len(result)
-    if result and len(result) == 1:
-        return result[0]
-    else:
-        return None
-
-def insertUrlInfoByUrl(url , content):
-    urlmd5 = getMd5Str(url)
-    nowStr = time.strftime('%Y-%m-%d %H:%M:%S')
-    #conn , cur = createConn()
-    cur.execute('insert into url_cache(url ,urlmd5 , content ,inserttime ,updatetime) values(%s,%s,%s,%s,%s)', (url , urlmd5 , content , nowStr , nowStr))
-    conn.commit()
-    #closeConn(conn , cur)
-
-
 
 
 def findUrlsInPage(url):
     urls = []
     urlmd5 = getMd5Str(url)
-    urlMain = getUrlMainByUrlMd5(urlmd5)
+    urlMain = UrlMainUtil.getUrlMainByUrlMd5(urlmd5)
     
     #查看此url是否已经被缓存过
-    content = findUrlInfoByUrl(url)
+    content = UrlInfoUtil.findUrlInfoByUrl(url)
     
     if not content:
         #print 'no cached'
@@ -215,7 +60,7 @@ def findUrlsInPage(url):
             #如果url不是以http开头的话，那么要给他拼接上父url
             #要保证url_cache表中的url都是以http开头的，不能是相对路径
             if not url.startswith('http') and not url.startswith('HTTP'):
-                parentUrlMain = getUrlMainByUrlMd5(urlMain.parentUrlMd5)
+                parentUrlMain = UrlMainUtil.getUrlMainByUrlMd5(urlMain.parentUrlMd5)
                 parentUrl = parentUrlMain.url
                 url = parentUrl + url
             
@@ -235,7 +80,7 @@ def findUrlsInPage(url):
         if not content:
             content = '404'
         #如果没有缓存过，将内容缓存
-        insertUrlInfoByUrl(url , content)
+        UrlInfoUtil.insertUrlInfoByUrl(url , content)
     
     pattern = re.compile('<a.*?href="(.*?)".*?>(.*?)</a>',re.S)
     urlItems = re.findall(pattern,content)
@@ -252,7 +97,7 @@ def findUrlsInPage(url):
         
         #查看缓存表中是否存在对应记录
         urlMd51 = getMd5Str(url1)
-        urlMain1 = getUrlMainByUrlMd5(urlMd51)
+        urlMain1 = UrlMainUtil.getUrlMainByUrlMd5(urlMd51)
         
         if urlMain1:
             #已经缓存过了
@@ -264,8 +109,8 @@ def findUrlsInPage(url):
             parentUrlMd5 = urlMain.urlMd5
             level = int(urlMain.level) + 1
             isVisited = '0'
-            urlMain1 = UrlMain(urlMd51 , parentUrlMd5 , url1 , urlName , level , isVisited)
-            saveUrlMain(urlMain1)
+            urlMain1 = UrlMainUtil.UrlMain(urlMd51 , parentUrlMd5 , url1 , urlName , level , isVisited)
+            UrlMainUtil.saveUrlMain(urlMain1)
         
         
         #print 'url : ' , url
@@ -287,7 +132,7 @@ def testRegxReplaceStr():
 
 #测试下根据urlmd5获取UrlMain对象的方法
 def testGetUrlMainByUrlMd5():
-    urlMain = getUrlMainByUrlMd5('9166e3ccb4560d45a76c9855f9c4ad48')
+    urlMain = UrlMainUtil.getUrlMainByUrlMd5('9166e3ccb4560d45a76c9855f9c4ad48')
     print urlMain.url
     print urlMain.urlMd5
     print urlMain.parentUrlMd5
@@ -311,10 +156,10 @@ def work():
     #print 'num : ' , len(urls)
     
     urlMd5 = getMd5Str(urlRoot)
-    urlMain = getUrlMainByUrlMd5(urlMd5)
+    urlMain = UrlMainUtil.getUrlMainByUrlMd5(urlMd5)
     if not urlMain:
-        urlMain = UrlMain(urlMd5 , '' , urlRoot , '古诗文网' , 1 , '0')
-        saveUrlMain(urlMain)
+        urlMain = UrlMainUtil.UrlMain(urlMd5 , '' , urlRoot , '古诗文网' , 1 , '0')
+        UrlMainUtil.saveUrlMain(urlMain)
             
     #testGetUrlMainByUrlMd5()
     
@@ -327,7 +172,7 @@ def work():
         #urlMains = getUrlMainsByLevelAndIsVisited(level , '0')    # 不使用分页的方式
         
         while True:
-            urlMains = getUrlMainsByLevelAndIsVisitedLimit(level , '0' , 100 )  #使用分页的方式
+            urlMains = UrlMainUtil.getUrlMainsByLevelAndIsVisitedLimit(level , '0' , 100 )  #使用分页的方式
             
             #如果urlMains为空，则退出循环
             if not urlMains:
@@ -339,15 +184,13 @@ def work():
             for urlMain in urlMains:
                 findUrlsInPage(urlMain.url)
                 #处理完这个url后，将对应的url_main表中标志位置为1
-                updateVisitedFlagForUrlMainByUrlMd5(urlMain.urlMd5 , '1')
+                UrlMainUtil.updateVisitedFlagForUrlMainByUrlMd5(urlMain.urlMd5 , '1')
         
         level = level + 1
 
 if __name__ == '__main__':
     
-    conn , cur = createConn()
     work()
-    closeConn(conn , cur)
     
     #test404()
 
