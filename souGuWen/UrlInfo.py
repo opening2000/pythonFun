@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# UrlUtil.py
+# UrlInfoUtil.py
 # version : 1.0
 
 
