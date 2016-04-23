@@ -80,7 +80,7 @@ def findUrlsInPage(url):
         if not content:
             content = '404'
         #如果没有缓存过，将内容缓存
-        UrlInfoUtil.insertUrlInfoByUrl(url , content)
+        UrlInfoUtil.insertUrlInfoByUrl(url, urlmd5, content)
     
     pattern = re.compile('<a.*?href="(.*?)".*?>(.*?)</a>',re.S)
     urlItems = re.findall(pattern,content)

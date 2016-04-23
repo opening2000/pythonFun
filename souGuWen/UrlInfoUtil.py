@@ -34,8 +34,7 @@ def findUrlInfoByUrlMd5(urlMd5):
         return None
 
 
-def insertUrlInfoByUrl(url , content):
-    urlmd5 = getMd5Str(url)
+def insertUrlInfoByUrl(url, urlmd5, content):
     nowStr = time.strftime('%Y-%m-%d %H:%M:%S')
     conn , cur = DBConnectionUtil.createConn()
     cur.execute('insert into url_cache(url ,urlmd5 , content ,inserttime ,updatetime) values(%s,%s,%s,%s,%s)', (url , urlmd5 , content , nowStr , nowStr))
