@@ -68,13 +68,54 @@ def findUrlsInPage(url):
             html = response.read()
             content = html.decode('utf-8').encode('utf-8')
         except Exception , e:
-            print 'Exception'
-            content = '404'
-            print url , '  404'
+            pattern1 = re.compile('(.*?).org/(.*?).aspx.*?/(.*?).aspx',re.S)
+            urlItems1 = re.findall(pattern1,url)
+            
+            if len(urlItems1) >0:
+                url = urlItems1[0][0] + '.org/' + urlItems1[0][-1] + '.aspx'
+            else:
+                pattern2 = re.compile('(.*?).org/(.*?).aspx',re.S)
+                urlItems2 = re.findall(pattern2,url)
+                if len(urlItems2)>0:
+                    url = urlItems2[0][0] + '.org/' + urlItems2[0][-1] + '.aspx'
+                    
+            try:
+                response = urllib2.urlopen(url)
+                html = response.read()
+                content = html.decode('utf-8').encode('utf-8')
+            except Exception , e:
+                print 'Exception'
+                content = '404'
+                print url , '  404'
+            except Error , e1:
+                print 'Error'
+                content = '404'
+                print url , '  404'
+            
         except Error , e1:
-            print 'Error'
-            content = '404'
-            print url , '  404'
+            pattern1 = re.compile('(.*?).org/(.*?).aspx.*?/(.*?).aspx',re.S)
+            urlItems1 = re.findall(pattern1,url)
+            
+            if len(urlItems1) >0:
+                url = urlItems1[0][0] + '.org/' + urlItems1[0][-1] + '.aspx'
+            else:
+                pattern2 = re.compile('(.*?).org/(.*?).aspx',re.S)
+                urlItems2 = re.findall(pattern2,url)
+                if len(urlItems2)>0:
+                    url = urlItems2[0][0] + '.org/' + urlItems2[0][-1] + '.aspx'
+                    
+            try:
+                response = urllib2.urlopen(url)
+                html = response.read()
+                content = html.decode('utf-8').encode('utf-8')
+            except Exception , e:
+                print 'Exception'
+                content = '404'
+                print url , '  404'
+            except Error , e1:
+                print 'Error'
+                content = '404'
+                print url , '  404'
         
         #如果content为空，则将content置为404
         if not content:
