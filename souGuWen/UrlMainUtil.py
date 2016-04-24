@@ -122,5 +122,12 @@ def updateUrlMainValiDateByUrlMd5(urlMd5 , valiDate):
     conn.commit()
     DBConnectionUtil.closeConn(conn , cur)
 
+#根据urlmd5置solveFlag标志位
+def updateUrlErrorByUrlMd5(urlMd5 , rightUrlMd5, rightUrl, solveFlag):
+    nowStr = time.strftime('%Y-%m-%d %H:%M:%S')
+    conn , cur = DBConnectionUtil.createConn()
+    cur.execute('update url_error set rightUrlMd5 = %s , rightUrl = %s, solveFlag=%s, updatetime = %s where urlmd5 = %s', (rightUrlMd5, rightUrl, solveFlag, nowStr, urlMd5))
+    conn.commit()
+    DBConnectionUtil.closeConn(conn , cur)
 
 
